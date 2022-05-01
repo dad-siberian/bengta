@@ -26,7 +26,7 @@ def download_image(url, filepath):
         file.write(response.content)
 
 
-def get_img_filepath(url, folder='images'):
+def create_img_filepath(url, folder='images'):
     os.makedirs(folder, exist_ok=True)
     filename = os.path.basename(url)
     filepath = os.path.join(folder, filename)
@@ -41,8 +41,9 @@ def get_upload_server_url(access_token):
     }
     response = requests.get(url, params=payload)
     response.raise_for_status()
-    check_for_error(response.json())
-    upload_server = response.json().get('response')
+    response_object = response.json()
+    check_for_error(response_object)
+    upload_server = response_object.get('response')
     return upload_server.get('upload_url')
 
 
@@ -90,7 +91,12 @@ def publish_post(access_token, group_id, photo, text):
 
 def check_for_error(response):
     if 'error' in response:
-        raise requests.RequestException
+        error = response.get('error')
+        error_code = error.get('error_code', None)
+        error_msg = error.get('error_msg')
+        raise requests.RequestException(
+            f'Error code: {error_code}. ({error_msg})'
+        )
 
 
 def main():
@@ -101,16 +107,17 @@ def main():
     comic_details = get_comic_details(comic_num)
     image_url = comic_details.get('img')
     post_text = comic_details.get('alt')
-    filepatch = get_img_filepath(image_url)
+    filepatch = create_img_filepath(image_url)
     download_image(image_url, filepatch)
     try:
         upload_url = get_upload_server_url(access_token)
         upload_details = upload_image(upload_url, filepatch)
         photo = save_photo_in_album(access_token, upload_details)
         publish_post(access_token, group_id, photo, post_text)
-    except requests.RequestException:
-        print('Ошибка в запросе')
-    os.remove(filepatch)
+    except requests.RequestException as error:
+        print(repr(error))
+    finally:
+        os.remove(filepatch)
 
 
 if __name__ == '__main__':
