@@ -54,8 +54,9 @@ def upload_image(upload_url, filepatch):
         }
         response = requests.post(upload_url, files=files)
         response.raise_for_status()
-        check_for_error(response)
-    return response.json()
+        response_object = response.json()
+        check_for_error(response_object)
+    return response_object
 
 
 def save_photo_in_album(access_token, upload_details):
@@ -69,8 +70,9 @@ def save_photo_in_album(access_token, upload_details):
     }
     response = requests.post(url, params=payload)
     response.raise_for_status()
-    check_for_error(response)
-    return response.json().get('response')[0]
+    response_object = response.json()
+    check_for_error(response_object)
+    return response_object.get('response')[0]
 
 
 def publish_post(access_token, group_id, photo, text):
@@ -86,7 +88,7 @@ def publish_post(access_token, group_id, photo, text):
     }
     response = requests.post(url, params=payload)
     response.raise_for_status()
-    check_for_error(response)
+    check_for_error(response.json())
 
 
 def check_for_error(response):
